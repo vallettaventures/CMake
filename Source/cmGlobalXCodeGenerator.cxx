@@ -660,6 +660,7 @@ void cmGlobalXCodeGenerator::ClearXCodeObjects()
   for (auto& obj : this->XCodeObjects) {
     delete obj;
   }
+  cmXCodeObject::resetIdSequence();
   this->XCodeObjects.clear();
   this->XCodeObjectIDs.clear();
   this->XCodeObjectMap.clear();

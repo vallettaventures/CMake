@@ -79,6 +79,11 @@ static std::string cmGetUniqueXcodeId(const std::string& hashingKey, const std::
     }
 }
 
+void cmXCodeObject::resetIdSequence() {
+    std::lock_guard<std::mutex> guard(objectIdCacheMutex);
+    sequenceIndex = 0;
+}
+
 cmXCodeObject::cmXCodeObject(PBXType ptype, Type type, const std::string& hashingKey)
 {
   this->Version = 15;
@@ -95,7 +100,11 @@ cmXCodeObject::cmXCodeObject(PBXType ptype, Type type, const std::string& hashin
 
       if (hashingKey == "") {
         sequenceIndex += 1;
-        this->Id = cmGetUniqueXcodeId("sequence:" + std::to_string(sequenceIndex), "01");
+        std::string id = std::to_string(sequenceIndex);
+        while (id.length() < 22) {
+            id = "0" + id;
+        }
+        this->Id = "01" + id;
       } else {
         this->Id = cmGetUniqueXcodeId(hashingKey, "02");
       }
