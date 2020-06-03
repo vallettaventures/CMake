@@ -13,7 +13,7 @@
 class cmXCode21Object : public cmXCodeObject
 {
 public:
-  cmXCode21Object(PBXType ptype, Type type);
+  cmXCode21Object(PBXType ptype, Type type, const std::string& hashingKey);
   void PrintComment(std::ostream&) override;
   static void PrintList(std::vector<cmXCodeObject*> const&, std::ostream& out,
                         PBXType t);

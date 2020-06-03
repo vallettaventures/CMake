@@ -148,8 +148,8 @@ private:
 
   // create cmXCodeObject from these functions so that memory can be managed
   // correctly.  All objects created are stored in this->XCodeObjects.
-  cmXCodeObject* CreateObject(cmXCodeObject::PBXType ptype);
-  cmXCodeObject* CreateObject(cmXCodeObject::Type type);
+  cmXCodeObject* CreateObject(cmXCodeObject::PBXType ptype, const std::string& hashKey);
+  cmXCodeObject* CreateObject(cmXCodeObject::Type type, const std::string& hashKey);
   cmXCodeObject* CreateString(const std::string& s);
   cmXCodeObject* CreateObjectReference(cmXCodeObject*);
   cmXCodeObject* CreateFlatClone(cmXCodeObject*);

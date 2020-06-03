@@ -7,12 +7,12 @@
 
 #include "cmSystemTools.h"
 
-cmXCode21Object::cmXCode21Object(PBXType ptype, Type type)
-  : cmXCodeObject(ptype, type)
+cmXCode21Object::cmXCode21Object(PBXType ptype, Type type, const std::string& hashingKey)
+  : cmXCodeObject(ptype, type, hashingKey)
 {
   this->Version = 21;
 }
-
+ 
 void cmXCode21Object::PrintComment(std::ostream& out)
 {
   if (this->Comment.empty()) {

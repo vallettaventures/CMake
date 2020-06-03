@@ -58,7 +58,7 @@ public:
   };
   static const char* PBXTypeNames[];
   virtual ~cmXCodeObject();
-  cmXCodeObject(PBXType ptype, Type type);
+  cmXCodeObject(PBXType ptype, Type type, const std::string& hashingKey);
   Type GetType() const { return this->TypeValue; }
   PBXType GetIsA() const { return this->IsA; }
 
