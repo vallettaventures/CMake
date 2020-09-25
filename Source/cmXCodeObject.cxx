@@ -3,8 +3,14 @@
 #include "cmXCodeObject.h"
 
 #include <ostream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 
 #include <CoreFoundation/CoreFoundation.h>
+
+#include <CommonCrypto/CommonDigest.h>
+#include <CommonCrypto/CommonCryptor.h>
 
 #include "cmSystemTools.h"
 
@@ -40,7 +46,45 @@ cmXCodeObject::~cmXCodeObject()
   this->Version = 15;
 }
 
-cmXCodeObject::cmXCodeObject(PBXType ptype, Type type)
+// Cache from hashing Key to object id
+static std::map<std::string, std::string> objectIdCache;
+static std::mutex objectIdCacheMutex;
+static size_t sequenceIndex = 0;
+
+static std::string cmGetUniqueXcodeId(const std::string& hashingKey, const std::string& prefix) {
+    std::string lookupKey(prefix + "-" + hashingKey);
+
+    auto it = objectIdCache.find(lookupKey);
+    if (it != objectIdCache.end()) {
+        return it->second;
+    } else {
+        // calculate sha-256 as base
+        uint8_t digest[CC_SHA256_DIGEST_LENGTH] = {0};
+        CC_SHA256(hashingKey.c_str(), (CC_LONG)hashingKey.length(), digest);
+
+        // hex and truncate that to 24 chars
+        std::stringstream idStream;
+        for (size_t i = 0; i < 12; i += 1) {
+            idStream << std::setw(2) << std::setfill('0') << std::hex;
+            idStream << (int)digest[i];
+        }
+
+        std::string xcodeId = prefix + idStream.str();
+        if (xcodeId.length() > 24) {
+            xcodeId.erase(xcodeId.begin() + 24);
+        }
+
+        // TODO Check for collision?
+        return objectIdCache[lookupKey] = xcodeId;
+    }
+}
+
+void cmXCodeObject::resetIdSequence() {
+    std::lock_guard<std::mutex> guard(objectIdCacheMutex);
+    sequenceIndex = 0;
+}
+
+cmXCodeObject::cmXCodeObject(PBXType ptype, Type type, const std::string& hashingKey)
 {
   this->Version = 15;
   this->Target = nullptr;
@@ -49,17 +93,21 @@ cmXCodeObject::cmXCodeObject(PBXType ptype, Type type)
   this->IsA = ptype;
 
   if (type == OBJECT) {
-    // Set the Id of an Xcode object to a unique string for each instance.
-    // However the Xcode user file references certain Ids: for those cases,
-    // override the generated Id using SetId().
-    //
-    char cUuid[40] = { 0 };
-    CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
-    CFStringRef s = CFUUIDCreateString(kCFAllocatorDefault, uuid);
-    CFStringGetCString(s, cUuid, sizeof(cUuid), kCFStringEncodingUTF8);
-    this->Id = cUuid;
-    CFRelease(s);
-    CFRelease(uuid);
+     std::lock_guard<std::mutex> guard(objectIdCacheMutex);
+      // Set the Id of an Xcode object to a unique string for each instance.
+      // However the Xcode user file references certain Ids: for those cases,
+      // override the generated Id using SetId().
+
+      if (hashingKey.length() == 0) {
+        sequenceIndex += 1;
+        std::string id = std::to_string(sequenceIndex);
+        while (id.length() < 22) {
+            id = "0" + id;
+        }
+        this->Id = "01" + id;
+      } else {
+        this->Id = cmGetUniqueXcodeId(hashingKey, "02");
+      }
   } else {
     this->Id =
       "Temporary cmake object, should not be referred to in Xcode file";
