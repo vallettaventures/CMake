@@ -2441,7 +2441,7 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateUtilityTarget(
   cmGeneratorTarget* gtgt)
 {
   cmXCodeObject* shellBuildPhase =
-    this->CreateObject(cmXCodeObject::PBXShellScriptBuildPhase, "cached:" + gtgt->GetName());
+    this->CreateObject(cmXCodeObject::PBXShellScriptBuildPhase, "cached:PBXShellScriptBuildPhase:" + gtgt->GetName());
   shellBuildPhase->AddAttribute("buildActionMask",
                                 this->CreateString("2147483647"));
   cmXCodeObject* buildFiles = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
@@ -2458,7 +2458,7 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateUtilityTarget(
   shellBuildPhase->AddAttribute("showEnvVarsInLog", this->CreateString("0"));
 
   cmXCodeObject* target =
-    this->CreateObject(cmXCodeObject::PBXAggregateTarget, {});
+    this->CreateObject(cmXCodeObject::PBXAggregateTarget, "cached:PBXAggregateTarget:" + gtgt->GetName());
   target->SetComment(gtgt->GetName());
   cmXCodeObject* buildPhases = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   std::vector<cmXCodeObject*> emptyContentVector;
@@ -2619,7 +2619,7 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeTarget(
   if (gtgt->GetType() == cmStateEnums::INTERFACE_LIBRARY) {
     return nullptr;
   }
-  cmXCodeObject* target = this->CreateObject(cmXCodeObject::PBXNativeTarget, "cached:"+gtgt->GetName());
+  cmXCodeObject* target = this->CreateObject(cmXCodeObject::PBXNativeTarget, "cached:PBXNativeTarget:"+gtgt->GetName());
   target->AddAttribute("buildPhases", buildPhases);
   cmXCodeObject* buildRules = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   target->AddAttribute("buildRules", buildRules);
@@ -3046,7 +3046,7 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
   this->MainGroupChildren->AddObject(productGroup);
 
   std::string project_id = cmStrCat("PROJECT_", root->GetProjectName());
-  this->RootObject = this->CreateObject(cmXCodeObject::PBXProject, "cached:" + project_id);
+  this->RootObject = this->CreateObject(cmXCodeObject::PBXProject, "cached:PBXProject" + project_id);
   this->RootObject->SetComment("Project object");
   this->RootObject->SetId(
     this->GetOrCreateId(project_id, this->RootObject->GetId()));
