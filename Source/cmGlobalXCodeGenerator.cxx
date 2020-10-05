@@ -2919,7 +2919,13 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreatePBXGroup(cmXCodeObject* parent,
   if (parent) {
     parentChildren = parent->GetObject("children");
   }
-  cmXCodeObject* group = this->CreateObject(cmXCodeObject::PBXGroup, {});
+
+  std::stringstream idSeed;
+  idSeed << "PBXGroup: " << name << " /// ";
+  if (parent != nullptr) {
+      idSeed << parent->GetId();
+  }
+  cmXCodeObject* group = this->CreateObject(cmXCodeObject::PBXGroup, idSeed.str());
   cmXCodeObject* groupChildren =
     this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   group->AddAttribute("name", this->CreateString(name));
