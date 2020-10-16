@@ -1223,7 +1223,7 @@ bool cmGlobalXCodeGenerator::CreateXCodeTarget(
   // create source build phase
   cmXCodeObject* sourceBuildPhase = nullptr;
   if (!sourceFiles.empty()) {
-    sourceBuildPhase = this->CreateObject(cmXCodeObject::PBXSourcesBuildPhase, {});
+    sourceBuildPhase = this->CreateObject(cmXCodeObject::PBXSourcesBuildPhase, "PBXSourcesBuildPhase: " + targetName);
     sourceBuildPhase->SetComment("Sources");
     sourceBuildPhase->AddAttribute("buildActionMask",
                                    this->CreateString("2147483647"));
@@ -2502,7 +2502,7 @@ std::string cmGlobalXCodeGenerator::AddConfigurations(cmXCodeObject* target,
   std::vector<std::string> const configVector = cmExpandedList(
     this->CurrentMakefile->GetRequiredDefinition("CMAKE_CONFIGURATION_TYPES"));
   cmXCodeObject* configlist =
-    this->CreateObject(cmXCodeObject::XCConfigurationList, {});
+    this->CreateObject(cmXCodeObject::XCConfigurationList, "XCConfigurationList in add configurations from: " + target->GetId());
   cmXCodeObject* buildConfigurations =
     this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   configlist->AddAttribute("buildConfigurations", buildConfigurations);
@@ -2630,7 +2630,7 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeTarget(
   target->AddAttribute("name", this->CreateString(gtgt->GetName()));
   target->AddAttribute("productName", this->CreateString(gtgt->GetName()));
 
-  cmXCodeObject* fileRef = this->CreateObject(cmXCodeObject::PBXFileReference, {});
+  cmXCodeObject* fileRef = this->CreateObject(cmXCodeObject::PBXFileReference, "PBXFileReference: " + gtgt->GetName());
   if (const char* fileType = this->GetTargetFileType(gtgt)) {
     fileRef->AddAttribute("explicitFileType", this->CreateString(fileType));
   }
@@ -2692,7 +2692,7 @@ void cmGlobalXCodeGenerator::AddDependTarget(cmXCodeObject* target,
 {
   // This is called once for every edge in the target dependency graph.
   cmXCodeObject* container =
-    this->CreateObject(cmXCodeObject::PBXContainerItemProxy, {});
+    this->CreateObject(cmXCodeObject::PBXContainerItemProxy, "PBXContainerItemProxy: " + target->GetId() + " // " + dependTarget->GetId());
   container->SetComment("PBXContainerItemProxy");
   container->AddAttribute("containerPortal",
                           this->CreateObjectReference(this->RootObject));
@@ -2702,7 +2702,7 @@ void cmGlobalXCodeGenerator::AddDependTarget(cmXCodeObject* target,
   container->AddAttribute(
     "remoteInfo", this->CreateString(dependTarget->GetTarget()->GetName()));
   cmXCodeObject* targetdep =
-    this->CreateObject(cmXCodeObject::PBXTargetDependency, {});
+    this->CreateObject(cmXCodeObject::PBXTargetDependency, "PBXTargetDependency: " + target->GetId() + " // " + dependTarget->GetId());
   targetdep->SetComment("PBXTargetDependency");
   targetdep->AddAttribute("target", this->CreateObjectReference(dependTarget));
   targetdep->AddAttribute("targetProxy",
@@ -2921,7 +2921,7 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreatePBXGroup(cmXCodeObject* parent,
   }
 
   std::stringstream idSeed;
-  idSeed << "PBXGroup: " << name << " /// ";
+  idSeed << "PBXGroup: from parent " << name << " /// ";
   if (parent != nullptr) {
       idSeed << parent->GetId();
   }
@@ -3033,7 +3033,7 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
     listObjs->AddObject(buildStyle);
   }
 
-  cmXCodeObject* mainGroup = this->CreateObject(cmXCodeObject::PBXGroup, {});
+  cmXCodeObject* mainGroup = this->CreateObject(cmXCodeObject::PBXGroup, "PBXGroup from root object (main): " + root->GetProjectName());
   this->MainGroupChildren = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   mainGroup->AddAttribute("children", this->MainGroupChildren);
   mainGroup->AddAttribute("sourceTree", this->CreateString("<group>"));
@@ -3043,7 +3043,7 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
     return false;
   }
 
-  cmXCodeObject* productGroup = this->CreateObject(cmXCodeObject::PBXGroup, {});
+  cmXCodeObject* productGroup = this->CreateObject(cmXCodeObject::PBXGroup, "PBXGroup from root object (products): " + root->GetProjectName());
   productGroup->AddAttribute("name", this->CreateString("Products"));
   productGroup->AddAttribute("sourceTree", this->CreateString("<group>"));
   cmXCodeObject* productGroupChildren =
@@ -3081,7 +3081,7 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
     this->RootObject->AddAttribute("projectRoot", this->CreateString(""));
   }
   cmXCodeObject* configlist =
-    this->CreateObject(cmXCodeObject::XCConfigurationList, {});
+    this->CreateObject(cmXCodeObject::XCConfigurationList, "XCConfigurationList from root object: " + root->GetProjectName());
   cmXCodeObject* buildConfigurations =
     this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   using Configs = std::vector<std::pair<std::string, cmXCodeObject*>>;
