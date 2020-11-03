@@ -90,18 +90,34 @@ public:
 // given inputs.
 class cmGlobalXCodeGenerator::BuildObjectListOrString
 {
+public:
+    enum class Type {
+        // Always a string
+        String,
+
+        // Always an array
+        Array,
+
+        // A string if a single value, and becomes an array if there are multiple
+        // This was observed with XCode 12
+        StringThenArray,
+    };
+
+private:
   cmGlobalXCodeGenerator* Generator;
   cmXCodeObject* Group;
   bool Empty;
   std::string String;
+    Type ListOrArray;
 
 public:
-  BuildObjectListOrString(cmGlobalXCodeGenerator* gen, bool buildObjectList)
+  BuildObjectListOrString(cmGlobalXCodeGenerator* gen, Type type)
     : Generator(gen)
     , Group(nullptr)
+    , ListOrArray(type)
     , Empty(true)
   {
-    if (buildObjectList) {
+    if (this->ListOrArray == Type::Array) {
       this->Group = this->Generator->CreateObject(cmXCodeObject::OBJECT_LIST, {});
     }
   }
@@ -110,14 +126,32 @@ public:
 
   void Add(const std::string& newString)
   {
-    this->Empty = false;
 
-    if (this->Group) {
-      this->Group->AddObject(this->Generator->CreateString(newString));
-    } else {
-      this->String += newString;
-      this->String += ' ';
-    }
+      switch (this->ListOrArray) {
+          case Type::String:
+              this->String += newString;
+              this->String += ' ';
+              break;
+
+          case Type::Array:
+              this->Group->AddObject(this->Generator->CreateString(newString));
+              break;
+
+          case Type::StringThenArray:
+              if (this->Empty) {
+                  this->String = newString;
+              } else {
+                  if (this->Group == nullptr) {
+                      this->Group = this->Generator->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+                      this->Group->AddObject(this->Generator->CreateString(this->String));
+                      this->String = "";
+                  }
+                  this->Group->AddObject(this->Generator->CreateString(newString));
+              }
+              break;
+      }
+
+    this->Empty = false;
   }
 
   const std::string& GetString() const { return this->String; }
@@ -840,7 +874,7 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeSourceFile(
   }
 
   // Add per-source definitions.
-  BuildObjectListOrString flagsBuild(this, false);
+  BuildObjectListOrString flagsBuild(this, BuildObjectListOrString::Type::String);
   const std::string COMPILE_DEFINITIONS("COMPILE_DEFINITIONS");
   if (cmProp compile_defs = sf->GetProperty(COMPILE_DEFINITIONS)) {
     this->AppendDefines(
@@ -1842,7 +1876,7 @@ void cmGlobalXCodeGenerator::CreateBuildSettings(cmGeneratorTarget* gtgt,
     defFlags, this->CurrentMakefile->GetDefineFlags());
 
   // Add preprocessor definitions for this target and configuration.
-  BuildObjectListOrString ppDefs(this, true);
+  BuildObjectListOrString ppDefs(this, BuildObjectListOrString::Type::StringThenArray);
   this->AppendDefines(
     ppDefs, "CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"");
   if (const std::string* exportMacro = gtgt->GetExportMacro()) {
@@ -2120,10 +2154,10 @@ void cmGlobalXCodeGenerator::CreateBuildSettings(cmGeneratorTarget* gtgt,
       break;
   }
 
-  BuildObjectListOrString dirs(this, true);
-  BuildObjectListOrString fdirs(this, true);
-  BuildObjectListOrString sysdirs(this, true);
-  BuildObjectListOrString sysfdirs(this, true);
+  BuildObjectListOrString dirs(this, BuildObjectListOrString::Type::Array);
+  BuildObjectListOrString fdirs(this, BuildObjectListOrString::Type::Array);
+  BuildObjectListOrString sysdirs(this, BuildObjectListOrString::Type::StringThenArray);
+  BuildObjectListOrString sysfdirs(this, BuildObjectListOrString::Type::Array);
   const bool emitSystemIncludes = this->XcodeVersion >= 83;
 
   std::vector<std::string> includes;
@@ -2374,9 +2408,7 @@ void cmGlobalXCodeGenerator::CreateBuildSettings(cmGeneratorTarget* gtgt,
   buildSettings->AddAttribute("OTHER_REZFLAGS", this->CreateString(""));
   buildSettings->AddAttribute("SECTORDER_FLAGS", this->CreateString(""));
   buildSettings->AddAttribute("USE_HEADERMAP", this->CreateString("NO"));
-  cmXCodeObject* group = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
-  group->AddObject(this->CreateString("$(inherited)"));
-  buildSettings->AddAttribute("WARNING_CFLAGS", group);
+  buildSettings->AddAttribute("WARNING_CFLAGS", this->CreateString("$(inherited)"));
 
   // Runtime version information.
   if (gtgt->GetType() == cmStateEnums::SHARED_LIBRARY) {
