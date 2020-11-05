@@ -7,9 +7,9 @@
 #include <cstdio>
 #include <cstring>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <utility>
-#include <iostream>
 
 #include <cm/memory>
 #include <cmext/algorithm>
@@ -91,24 +91,25 @@ public:
 class cmGlobalXCodeGenerator::BuildObjectListOrString
 {
 public:
-    enum class Type {
-        // Always a string
-        String,
+  enum class Type
+  {
+    // Always a string
+    String,
 
-        // Always an array
-        Array,
+    // Always an array
+    Array,
 
-        // A string if a single value, and becomes an array if there are multiple
-        // This was observed with XCode 12
-        StringThenArray,
-    };
+    // A string if a single value, and becomes an array if there are multiple
+    // This was observed with XCode 12
+    StringThenArray,
+  };
 
 private:
   cmGlobalXCodeGenerator* Generator;
   cmXCodeObject* Group;
   bool Empty;
   std::string String;
-    Type ListOrArray;
+  Type ListOrArray;
 
 public:
   BuildObjectListOrString(cmGlobalXCodeGenerator* gen, Type type)
@@ -118,7 +119,8 @@ public:
     , Empty(true)
   {
     if (this->ListOrArray == Type::Array) {
-      this->Group = this->Generator->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+      this->Group =
+        this->Generator->CreateObject(cmXCodeObject::OBJECT_LIST, {});
     }
   }
 
@@ -127,29 +129,31 @@ public:
   void Add(const std::string& newString)
   {
 
-      switch (this->ListOrArray) {
-          case Type::String:
-              this->String += newString;
-              this->String += ' ';
-              break;
+    switch (this->ListOrArray) {
+      case Type::String:
+        this->String += newString;
+        this->String += ' ';
+        break;
 
-          case Type::Array:
-              this->Group->AddObject(this->Generator->CreateString(newString));
-              break;
+      case Type::Array:
+        this->Group->AddObject(this->Generator->CreateString(newString));
+        break;
 
-          case Type::StringThenArray:
-              if (this->Empty) {
-                  this->String = newString;
-              } else {
-                  if (this->Group == nullptr) {
-                      this->Group = this->Generator->CreateObject(cmXCodeObject::OBJECT_LIST, {});
-                      this->Group->AddObject(this->Generator->CreateString(this->String));
-                      this->String = "";
-                  }
-                  this->Group->AddObject(this->Generator->CreateString(newString));
-              }
-              break;
-      }
+      case Type::StringThenArray:
+        if (this->Empty) {
+          this->String = newString;
+        } else {
+          if (this->Group == nullptr) {
+            this->Group =
+              this->Generator->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+            this->Group->AddObject(
+              this->Generator->CreateString(this->String));
+            this->String = "";
+          }
+          this->Group->AddObject(this->Generator->CreateString(newString));
+        }
+        break;
+    }
 
     this->Empty = false;
   }
@@ -732,15 +736,18 @@ void cmGlobalXCodeGenerator::addObject(std::unique_ptr<cmXCodeObject> obj)
 cmXCodeObject* cmGlobalXCodeGenerator::CreateObject(
   cmXCodeObject::PBXType ptype, const std::string& hashingKey)
 {
-  auto obj = cm::make_unique<cmXCode21Object>(ptype, cmXCodeObject::OBJECT, hashingKey);
+  auto obj =
+    cm::make_unique<cmXCode21Object>(ptype, cmXCodeObject::OBJECT, hashingKey);
   auto ptr = obj.get();
   this->addObject(std::move(obj));
   return ptr;
 }
 
-cmXCodeObject* cmGlobalXCodeGenerator::CreateObject(cmXCodeObject::Type type, const std::string& hashingKey)
+cmXCodeObject* cmGlobalXCodeGenerator::CreateObject(
+  cmXCodeObject::Type type, const std::string& hashingKey)
 {
-  auto obj = cm::make_unique<cmXCodeObject>(cmXCodeObject::None, type, hashingKey);
+  auto obj =
+    cm::make_unique<cmXCodeObject>(cmXCodeObject::None, type, hashingKey);
   auto ptr = obj.get();
   this->addObject(std::move(obj));
   return ptr;
@@ -787,7 +794,9 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeSourceFileFromPath(
   cmXCodeObject* fileRef =
     this->CreateXCodeFileReferenceFromPath(fullpath, target, lang, sf);
 
-  cmXCodeObject* buildFile = this->CreateObject(cmXCodeObject::PBXBuildFile, "sourcefilefrompath: target=" + target->GetName() + ", path="+fullpath);
+  cmXCodeObject* buildFile = this->CreateObject(
+    cmXCodeObject::PBXBuildFile,
+    "sourcefilefrompath: target=" + target->GetName() + ", path=" + fullpath);
   buildFile->SetComment(fileRef->GetComment());
   buildFile->AddAttribute("fileRef", this->CreateObjectReference(fileRef));
 
@@ -874,7 +883,8 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeSourceFile(
   }
 
   // Add per-source definitions.
-  BuildObjectListOrString flagsBuild(this, BuildObjectListOrString::Type::String);
+  BuildObjectListOrString flagsBuild(this,
+                                     BuildObjectListOrString::Type::String);
   const std::string COMPILE_DEFINITIONS("COMPILE_DEFINITIONS");
   if (cmProp compile_defs = sf->GetProperty(COMPILE_DEFINITIONS)) {
     this->AppendDefines(
@@ -907,7 +917,8 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeSourceFile(
   cmXCodeObject* buildFile =
     this->CreateXCodeSourceFileFromPath(sf->ResolveFullPath(), gtgt, lang, sf);
 
-  cmXCodeObject* settings = this->CreateObject(cmXCodeObject::ATTRIBUTE_GROUP, {});
+  cmXCodeObject* settings =
+    this->CreateObject(cmXCodeObject::ATTRIBUTE_GROUP, {});
   settings->AddAttributeIfNotEmpty("COMPILER_FLAGS",
                                    this->CreateString(flags));
 
@@ -1028,7 +1039,9 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeFileReferenceFromPath(
   std::string key = GetGroupMapKeyFromPath(target, fullpath);
   cmXCodeObject* fileRef = this->FileRefs[key];
   if (!fileRef) {
-    fileRef = this->CreateObject(cmXCodeObject::PBXFileReference, "sourcefilereferencefrompath: target=" + target->GetName() + ", path="+fullpath);
+    fileRef = this->CreateObject(cmXCodeObject::PBXFileReference,
+                                 "sourcefilereferencefrompath: target=" +
+                                   target->GetName() + ", path=" + fullpath);
     fileRef->SetComment(fullpath);
     this->FileRefs[key] = fileRef;
   }
@@ -1257,7 +1270,9 @@ bool cmGlobalXCodeGenerator::CreateXCodeTarget(
   // create source build phase
   cmXCodeObject* sourceBuildPhase = nullptr;
   if (!sourceFiles.empty()) {
-    sourceBuildPhase = this->CreateObject(cmXCodeObject::PBXSourcesBuildPhase, "PBXSourcesBuildPhase: " + targetName);
+    sourceBuildPhase =
+      this->CreateObject(cmXCodeObject::PBXSourcesBuildPhase,
+                         "PBXSourcesBuildPhase: " + targetName);
     sourceBuildPhase->SetComment("Sources");
     sourceBuildPhase->AddAttribute("buildActionMask",
                                    this->CreateString("2147483647"));
@@ -1273,7 +1288,8 @@ bool cmGlobalXCodeGenerator::CreateXCodeTarget(
   // create header build phase - only for framework targets
   cmXCodeObject* headerBuildPhase = nullptr;
   if (!headerFiles.empty() && isFrameworkTarget) {
-    headerBuildPhase = this->CreateObject(cmXCodeObject::PBXHeadersBuildPhase, {});
+    headerBuildPhase =
+      this->CreateObject(cmXCodeObject::PBXHeadersBuildPhase, {});
     headerBuildPhase->SetComment("Headers");
     headerBuildPhase->AddAttribute("buildActionMask",
                                    this->CreateString("2147483647"));
@@ -1407,7 +1423,8 @@ bool cmGlobalXCodeGenerator::CreateXCodeTarget(
   }
 
   // create list of build phases and create the Xcode target
-  cmXCodeObject* buildPhases = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* buildPhases =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
 
   this->CreateCustomCommands(buildPhases, sourceBuildPhase, headerBuildPhase,
                              resourceBuildPhase, contentBuildPhases,
@@ -1484,7 +1501,8 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateBuildPhase(
     this->CreateObject(cmXCodeObject::PBXShellScriptBuildPhase, {});
   buildPhase->AddAttribute("buildActionMask",
                            this->CreateString("2147483647"));
-  cmXCodeObject* buildFiles = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* buildFiles =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   buildPhase->AddAttribute("files", buildFiles);
   buildPhase->AddAttribute("name", this->CreateString(name));
   buildPhase->AddAttribute("runOnlyForDeploymentPostprocessing",
@@ -1876,7 +1894,8 @@ void cmGlobalXCodeGenerator::CreateBuildSettings(cmGeneratorTarget* gtgt,
     defFlags, this->CurrentMakefile->GetDefineFlags());
 
   // Add preprocessor definitions for this target and configuration.
-  BuildObjectListOrString ppDefs(this, BuildObjectListOrString::Type::StringThenArray);
+  BuildObjectListOrString ppDefs(
+    this, BuildObjectListOrString::Type::StringThenArray);
   this->AppendDefines(
     ppDefs, "CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"");
   if (const std::string* exportMacro = gtgt->GetExportMacro()) {
@@ -2156,7 +2175,8 @@ void cmGlobalXCodeGenerator::CreateBuildSettings(cmGeneratorTarget* gtgt,
 
   BuildObjectListOrString dirs(this, BuildObjectListOrString::Type::Array);
   BuildObjectListOrString fdirs(this, BuildObjectListOrString::Type::Array);
-  BuildObjectListOrString sysdirs(this, BuildObjectListOrString::Type::StringThenArray);
+  BuildObjectListOrString sysdirs(
+    this, BuildObjectListOrString::Type::StringThenArray);
   BuildObjectListOrString sysfdirs(this, BuildObjectListOrString::Type::Array);
   const bool emitSystemIncludes = this->XcodeVersion >= 83;
 
@@ -2408,7 +2428,8 @@ void cmGlobalXCodeGenerator::CreateBuildSettings(cmGeneratorTarget* gtgt,
   buildSettings->AddAttribute("OTHER_REZFLAGS", this->CreateString(""));
   buildSettings->AddAttribute("SECTORDER_FLAGS", this->CreateString(""));
   buildSettings->AddAttribute("USE_HEADERMAP", this->CreateString("NO"));
-  buildSettings->AddAttribute("WARNING_CFLAGS", this->CreateString("$(inherited)"));
+  buildSettings->AddAttribute("WARNING_CFLAGS",
+                              this->CreateString("$(inherited)"));
 
   // Runtime version information.
   if (gtgt->GetType() == cmStateEnums::SHARED_LIBRARY) {
@@ -2473,14 +2494,18 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateUtilityTarget(
   cmGeneratorTarget* gtgt)
 {
   cmXCodeObject* shellBuildPhase =
-    this->CreateObject(cmXCodeObject::PBXShellScriptBuildPhase, "cached:PBXShellScriptBuildPhase:" + gtgt->GetName());
+    this->CreateObject(cmXCodeObject::PBXShellScriptBuildPhase,
+                       "cached:PBXShellScriptBuildPhase:" + gtgt->GetName());
   shellBuildPhase->AddAttribute("buildActionMask",
                                 this->CreateString("2147483647"));
-  cmXCodeObject* buildFiles = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* buildFiles =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   shellBuildPhase->AddAttribute("files", buildFiles);
-  cmXCodeObject* inputPaths = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* inputPaths =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   shellBuildPhase->AddAttribute("inputPaths", inputPaths);
-  cmXCodeObject* outputPaths = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* outputPaths =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   shellBuildPhase->AddAttribute("outputPaths", outputPaths);
   shellBuildPhase->AddAttribute("runOnlyForDeploymentPostprocessing",
                                 this->CreateString("0"));
@@ -2490,15 +2515,18 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateUtilityTarget(
   shellBuildPhase->AddAttribute("showEnvVarsInLog", this->CreateString("0"));
 
   cmXCodeObject* target =
-    this->CreateObject(cmXCodeObject::PBXAggregateTarget, "cached:PBXAggregateTarget:" + gtgt->GetName());
+    this->CreateObject(cmXCodeObject::PBXAggregateTarget,
+                       "cached:PBXAggregateTarget:" + gtgt->GetName());
   target->SetComment(gtgt->GetName());
-  cmXCodeObject* buildPhases = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* buildPhases =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   std::vector<cmXCodeObject*> emptyContentVector;
   this->CreateCustomCommands(buildPhases, nullptr, nullptr, nullptr,
                              emptyContentVector, nullptr, gtgt);
   target->AddAttribute("buildPhases", buildPhases);
   this->AddConfigurations(target, gtgt);
-  cmXCodeObject* dependencies = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* dependencies =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   target->AddAttribute("dependencies", dependencies);
   target->AddAttribute("name", this->CreateString(gtgt->GetName()));
   target->AddAttribute("productName", this->CreateString(gtgt->GetName()));
@@ -2533,8 +2561,9 @@ std::string cmGlobalXCodeGenerator::AddConfigurations(cmXCodeObject* target,
 {
   std::vector<std::string> const configVector = cmExpandedList(
     this->CurrentMakefile->GetRequiredDefinition("CMAKE_CONFIGURATION_TYPES"));
-  cmXCodeObject* configlist =
-    this->CreateObject(cmXCodeObject::XCConfigurationList, "XCConfigurationList in add configurations from: " + target->GetId());
+  cmXCodeObject* configlist = this->CreateObject(
+    cmXCodeObject::XCConfigurationList,
+    "XCConfigurationList in add configurations from: " + target->GetId());
   cmXCodeObject* buildConfigurations =
     this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   configlist->AddAttribute("buildConfigurations", buildConfigurations);
@@ -2651,18 +2680,23 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreateXCodeTarget(
   if (gtgt->GetType() == cmStateEnums::INTERFACE_LIBRARY) {
     return nullptr;
   }
-  cmXCodeObject* target = this->CreateObject(cmXCodeObject::PBXNativeTarget, "cached:PBXNativeTarget:"+gtgt->GetName());
+  cmXCodeObject* target =
+    this->CreateObject(cmXCodeObject::PBXNativeTarget,
+                       "cached:PBXNativeTarget:" + gtgt->GetName());
   target->AddAttribute("buildPhases", buildPhases);
-  cmXCodeObject* buildRules = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* buildRules =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   target->AddAttribute("buildRules", buildRules);
   std::string defConfig;
   defConfig = this->AddConfigurations(target, gtgt);
-  cmXCodeObject* dependencies = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* dependencies =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   target->AddAttribute("dependencies", dependencies);
   target->AddAttribute("name", this->CreateString(gtgt->GetName()));
   target->AddAttribute("productName", this->CreateString(gtgt->GetName()));
 
-  cmXCodeObject* fileRef = this->CreateObject(cmXCodeObject::PBXFileReference, "PBXFileReference: " + gtgt->GetName());
+  cmXCodeObject* fileRef = this->CreateObject(
+    cmXCodeObject::PBXFileReference, "PBXFileReference: " + gtgt->GetName());
   if (const char* fileType = this->GetTargetFileType(gtgt)) {
     fileRef->AddAttribute("explicitFileType", this->CreateString(fileType));
   }
@@ -2724,7 +2758,9 @@ void cmGlobalXCodeGenerator::AddDependTarget(cmXCodeObject* target,
 {
   // This is called once for every edge in the target dependency graph.
   cmXCodeObject* container =
-    this->CreateObject(cmXCodeObject::PBXContainerItemProxy, "PBXContainerItemProxy: " + target->GetId() + " // " + dependTarget->GetId());
+    this->CreateObject(cmXCodeObject::PBXContainerItemProxy,
+                       "PBXContainerItemProxy: " + target->GetId() + " // " +
+                         dependTarget->GetId());
   container->SetComment("PBXContainerItemProxy");
   container->AddAttribute("containerPortal",
                           this->CreateObjectReference(this->RootObject));
@@ -2734,7 +2770,9 @@ void cmGlobalXCodeGenerator::AddDependTarget(cmXCodeObject* target,
   container->AddAttribute(
     "remoteInfo", this->CreateString(dependTarget->GetTarget()->GetName()));
   cmXCodeObject* targetdep =
-    this->CreateObject(cmXCodeObject::PBXTargetDependency, "PBXTargetDependency: " + target->GetId() + " // " + dependTarget->GetId());
+    this->CreateObject(cmXCodeObject::PBXTargetDependency,
+                       "PBXTargetDependency: " + target->GetId() + " // " +
+                         dependTarget->GetId());
   targetdep->SetComment("PBXTargetDependency");
   targetdep->AddAttribute("target", this->CreateObjectReference(dependTarget));
   targetdep->AddAttribute("targetProxy",
@@ -2955,9 +2993,10 @@ cmXCodeObject* cmGlobalXCodeGenerator::CreatePBXGroup(cmXCodeObject* parent,
   std::stringstream idSeed;
   idSeed << "PBXGroup: from parent " << name << " /// ";
   if (parent != nullptr) {
-      idSeed << parent->GetId();
+    idSeed << parent->GetId();
   }
-  cmXCodeObject* group = this->CreateObject(cmXCodeObject::PBXGroup, idSeed.str());
+  cmXCodeObject* group =
+    this->CreateObject(cmXCodeObject::PBXGroup, idSeed.str());
   cmXCodeObject* groupChildren =
     this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   group->AddAttribute("name", this->CreateString(name));
@@ -3049,7 +3088,8 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
   this->ClearXCodeObjects();
   this->RootObject = nullptr;
   this->MainGroupChildren = nullptr;
-  cmXCodeObject* group = this->CreateObject(cmXCodeObject::ATTRIBUTE_GROUP, {});
+  cmXCodeObject* group =
+    this->CreateObject(cmXCodeObject::ATTRIBUTE_GROUP, {});
   group->AddAttribute("COPY_PHASE_STRIP", this->CreateString("NO"));
   cmXCodeObject* listObjs = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   for (const std::string& CurrentConfigurationType :
@@ -3059,13 +3099,16 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
     const std::string& name = CurrentConfigurationType;
     buildStyle->AddAttribute("name", this->CreateString(name));
     buildStyle->SetComment(name);
-    cmXCodeObject* sgroup = this->CreateObject(cmXCodeObject::ATTRIBUTE_GROUP, {});
+    cmXCodeObject* sgroup =
+      this->CreateObject(cmXCodeObject::ATTRIBUTE_GROUP, {});
     sgroup->AddAttribute("COPY_PHASE_STRIP", this->CreateString("NO"));
     buildStyle->AddAttribute("buildSettings", sgroup);
     listObjs->AddObject(buildStyle);
   }
 
-  cmXCodeObject* mainGroup = this->CreateObject(cmXCodeObject::PBXGroup, "PBXGroup from root object (main): " + root->GetProjectName());
+  cmXCodeObject* mainGroup = this->CreateObject(
+    cmXCodeObject::PBXGroup,
+    "PBXGroup from root object (main): " + root->GetProjectName());
   this->MainGroupChildren = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   mainGroup->AddAttribute("children", this->MainGroupChildren);
   mainGroup->AddAttribute("sourceTree", this->CreateString("<group>"));
@@ -3075,7 +3118,9 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
     return false;
   }
 
-  cmXCodeObject* productGroup = this->CreateObject(cmXCodeObject::PBXGroup, "PBXGroup from root object (products): " + root->GetProjectName());
+  cmXCodeObject* productGroup = this->CreateObject(
+    cmXCodeObject::PBXGroup,
+    "PBXGroup from root object (products): " + root->GetProjectName());
   productGroup->AddAttribute("name", this->CreateString("Products"));
   productGroup->AddAttribute("sourceTree", this->CreateString("<group>"));
   cmXCodeObject* productGroupChildren =
@@ -3084,7 +3129,8 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
   this->MainGroupChildren->AddObject(productGroup);
 
   std::string project_id = cmStrCat("PROJECT_", root->GetProjectName());
-  this->RootObject = this->CreateObject(cmXCodeObject::PBXProject, "cached:PBXProject" + project_id);
+  this->RootObject = this->CreateObject(cmXCodeObject::PBXProject,
+                                        "cached:PBXProject" + project_id);
   this->RootObject->SetComment("Project object");
   this->RootObject->SetId(
     this->GetOrCreateId(project_id, this->RootObject->GetId()));
@@ -3112,8 +3158,9 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
     this->RootObject->AddAttribute("projectDirPath", this->CreateString(pdir));
     this->RootObject->AddAttribute("projectRoot", this->CreateString(""));
   }
-  cmXCodeObject* configlist =
-    this->CreateObject(cmXCodeObject::XCConfigurationList, "XCConfigurationList from root object: " + root->GetProjectName());
+  cmXCodeObject* configlist = this->CreateObject(
+    cmXCodeObject::XCConfigurationList,
+    "XCConfigurationList from root object: " + root->GetProjectName());
   cmXCodeObject* buildConfigurations =
     this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   using Configs = std::vector<std::pair<std::string, cmXCodeObject*>>;
@@ -3240,7 +3287,8 @@ bool cmGlobalXCodeGenerator::CreateXCodeObjects(
   }
   this->CreateXCodeDependHackTarget(targets);
   // now add all targets to the root object
-  cmXCodeObject* allTargets = this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
+  cmXCodeObject* allTargets =
+    this->CreateObject(cmXCodeObject::OBJECT_LIST, {});
   for (auto t : targets) {
     allTargets->AddObject(t);
     cmXCodeObject* productRef = t->GetObject("productReference");
