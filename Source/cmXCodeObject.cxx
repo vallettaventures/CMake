@@ -3,14 +3,11 @@
 #include "cmXCodeObject.h"
 
 #include <iomanip>
-#include <iostream>
 #include <ostream>
-#include <sstream>
 
-#include <CommonCrypto/CommonCryptor.h>
-#include <CommonCrypto/CommonDigest.h>
 #include <CoreFoundation/CoreFoundation.h>
 
+#include "cmCryptoHash.h"
 #include "cmSystemTools.h"
 
 const char* cmXCodeObject::PBXTypeNames[] = {
@@ -59,18 +56,8 @@ static std::string cmGetUniqueXcodeId(const std::string& hashingKey,
   if (it != objectIdCache.end()) {
     return it->second;
   } else {
-    // calculate sha-256 as base
-    uint8_t digest[CC_SHA256_DIGEST_LENGTH] = { 0 };
-    CC_SHA256(hashingKey.c_str(), (CC_LONG)hashingKey.length(), digest);
-
-    // hex and truncate that to 24 chars
-    std::stringstream idStream;
-    for (size_t i = 0; i < 12; i += 1) {
-      idStream << std::setw(2) << std::setfill('0') << std::hex;
-      idStream << (int)digest[i];
-    }
-
-    std::string xcodeId = prefix + idStream.str();
+    cmCryptoHash hasher(cmCryptoHash::AlgoSHA256);
+    std::string xcodeId = prefix + hasher.HashString(hashingKey);
     if (xcodeId.length() > 24) {
       xcodeId.erase(xcodeId.begin() + 24);
     }
